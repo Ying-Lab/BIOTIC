@@ -19,7 +19,7 @@ python setup.py install
 
 Running
 -----
-refer to pbmc demo in [**demo**](a549 demo.ipynb)
+refer to pbmc demo in [**demo**]([a549 demo.ipynb])
 
 Parameters
 -----
