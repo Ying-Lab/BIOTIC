@@ -19,7 +19,7 @@ python setup.py install
 
 Running
 -----
-refer to pbmc demo in ([[a549 demo.ipynb])](https://github.com/Ying-Lab/TREVI/blob/46201a7823887830b45a64c794123e7403863146/a549%20demo.ipynb))
+refer to pbmc demo in [[a549 demo.ipynb])](https://github.com/Ying-Lab/TREVI/blob/46201a7823887830b45a64c794123e7403863146/a549%20demo.ipynb)
 
 Parameters
 -----
