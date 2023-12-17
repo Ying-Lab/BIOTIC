@@ -1,4 +1,4 @@
-![image](https://github.com/Ying-Lab/TREVI/assets/73517736/0f5f7478-6e0c-4934-adb5-ee5475cd6f02)Introduction
+Introduction
 -----
 TREVI (Transcriptional REgulation-driven Variational Inference model) is an innovative Bayesian model for multi-omics data that incorporates priori knowledge of the gene regulation process into generation process, and the causal relationship of gene regulation into the inference process.
 
