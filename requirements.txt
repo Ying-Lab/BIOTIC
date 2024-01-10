@@ -42,7 +42,6 @@ grpcio==1.42.0
 h5py==3.6.0
 hyperopt==0.1.2
 idna==3.3
-igraph @ file:///home/conda/feedstock_root/build_artifacts/python-igraph_1674939395098/work
 importlib-metadata==4.8.2
 importlib-resources==5.4.0
 ipykernel==6.5.1
@@ -153,15 +152,11 @@ tensorflow-probability==0.15.0
 termcolor==1.1.0
 terminado==0.12.1
 testpath==0.6.0
-texttable @ file:///home/conda/feedstock_root/build_artifacts/texttable_1669197017831/work
 threadpoolctl==3.0.0
 tomli==1.2.2
 toolz==0.11.2
-torch==1.12.1+cu116
-torchaudio==0.12.1+cu116
 torchfile==0.1.0
 torchmetrics==0.9.3
-torchvision==0.13.1+cu116
 tornado==6.2
 tqdm==4.62.3
 traitlets==5.3.0
