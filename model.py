@@ -66,15 +66,7 @@ class tre(nn.Module):
             allow_broadcast = self.allow_broadcast,
             use_cuda = self.use_cuda,
         )
-        self.encoder_zy = MLP(#z+y->zy
-            [self.z_dim + self.output_size] + hidden_sizes + [[z_dim, z_dim]],
-            activation =  nn.Softplus,
-            output_activation = [None, Exp],
-            allow_broadcast = self.allow_broadcast,
-            use_cuda = self.use_cuda,
-        )
-
-        self.encoder_ptf = MLP(#xs->ptf 
+        self.encoder_ptf = MLP(#xs->ptf
             [self.input_size] + hidden_sizes + [[self.mask_size , self.mask_size ]],
             activation = nn.Softplus,
             output_activation = [None, Exp],
@@ -88,15 +80,13 @@ class tre(nn.Module):
             allow_broadcast = self.allow_broadcast,
             use_cuda = self.use_cuda,
         )
-
-        self.decoder_zy = MLP(#01+y->z
-            [self.z_dim + self.output_size] + hidden_sizes + [[z_dim, z_dim]],
+        self.decoder_tf = MLP(#01+mask->tf
+            [self.mask_size] + hidden_sizes + [[self.mask_size, self.mask_size]],
             activation =  nn.Softplus,
             output_activation = [None, Exp],
             allow_broadcast = self.allow_broadcast,
             use_cuda = self.use_cuda,
         )
-
         self.encoder_ls = MLP(
             [self.input_size ] + hidden_sizes + [[1,1]],
             activation = nn.Softplus,
@@ -104,8 +94,8 @@ class tre(nn.Module):
             allow_broadcast = self.allow_broadcast,
             use_cuda = self.use_cuda,
         )
-        self.decoder_thetas = MLP(#zy+tf+accp
-            [self.z_dim + self.mask_size  +self.input_size ] + hidden_sizes + [self.input_size],#
+        self.decoder_thetas = MLP(
+            [self.z_dim + self.output_size + self.mask_size  +self.input_size ] + hidden_sizes + [self.input_size],#
             activation = nn.Softplus,
             output_activation = nn.Sigmoid,
             allow_broadcast = self.allow_broadcast,
@@ -122,10 +112,9 @@ class tre(nn.Module):
         """
         The model corresponds to the following generative process:
         z_TF  ~ Normal(0, I) 		
-        μ_(z_y ), Σ_(z_y )   = decoder_zy (z_TF  , y) 	
-        z_y ~ Normal(μ_(z_y ), Σ_(z_y )   )  
+        y ~ categorical(alpha)
         z_GRN  ~ Normal(Ref, 1) 		
-        θ= decoder_θ(z_y, z_GRN, rp,ls)	
+        θ= decoder_θ(z_TF, y, z_GRN, rp,ls)	
         X ~ Multinomial(θ)   	
         :param xs: a batch of vectors of gene counts from a cell
         :param ys: (optional) a batch of the class labels
@@ -149,8 +138,6 @@ class tre(nn.Module):
             prior_loc = torch.zeros(batch_size,self.z_dim, **options)
             prior_scale = torch.ones(batch_size,self.z_dim, **options)
             zs = pyro.sample('z', dist.Normal(prior_loc, prior_scale).to_event(1))
-            zy_loc, zy_scale = self.decoder_zy([zs, y])
-            zy = pyro.sample('zy', dist.Normal(zy_loc, zy_scale).to_event(1))  
 
             #sample zgrn cell*tf*gene
             tf_loc = torch.ones(batch_size, self.mask_size, **options).cpu()*0.1+(self.mask*0.1).ravel()
@@ -162,13 +149,17 @@ class tre(nn.Module):
             ls_scale = torch.ones(batch_size, **options)
             ls = pyro.sample('ls', dist.Weibull(ls_loc, ls_scale))
             ls = ls.unsqueeze(-1)####
-           
-            thetas = self.decoder_thetas([zy, tf,acc_p])#
+            
+            # true expression
+            thetas = self.decoder_thetas([zs,y, tf,acc_p])#
             thetas = thetas * ls
             thetas = self.cutoff(thetas)
 
+            
+
             # finally, score the observation
-            max_count = torch.ceil(abs(xs).sum(1).sum()).int().item()#Y有rna的地方读
+            max_count = torch.ceil(abs(xs).sum(1).sum()).int().item()#有rna的地方读
+            # print(max_count)
             pyro.sample('x', dist.DirichletMultinomial(total_count = max_count, concentration = thetas), obs = xs)
 
 
@@ -204,9 +195,6 @@ class tre(nn.Module):
                 ys = pyro.sample('y', dist.OneHotCategorical(alpha_y))
             
             y = self.encoder_y(zs)
-            zy_loc, zy_scale = self.encoder_zy([zs, y])
-            zy = pyro.sample('zy', dist.Normal(zy_loc, zy_scale).to_event(1))
-            
 
             ls_loc, ls_scale = self.encoder_ls(xs)
             ls = pyro.sample('ls', dist.Weibull(ls_loc.squeeze(), ls_scale.squeeze()))#20
@@ -225,8 +213,6 @@ class tre(nn.Module):
         z, _ = self.encoder_z(xs)
         alpha = self.encoder_y(z)
 
-        # get the index (digit) that corresponds to
-        # the maximum predicted class probability
         res, ind = torch.topk(alpha, 1)
 
         # convert the digit(s) to one-hot tensor(s)
@@ -246,40 +232,36 @@ class tre(nn.Module):
         # compute all class probabilities for the cell(s)
         z,_ = self.encoder_z(xs)
         alpha = self.encoder_y(z)
-
-        # get the index (digit) that corresponds to
-        # the maximum predicted class probability
         res, ind = torch.topk(alpha, 1)
-
-        # convert the digit(s) to one-hot tensor(s)
         ys = torch.zeros_like(alpha).scatter_(1, ind, 1.0)
 
         return ys, alpha
-    def predicted_tf(self, xs):
-        """
-        compute the grn latent embedding of a cell (or a batch of cells)
-
-        :param xs: a batch of vectors of gene counts from a cell
-        :return: a batch of the latent embeddings 
-        """
+    def predicted_zgrn(self, xs):
         ptf,_ = self.encoder_ptf(xs)
         return ptf
+    
     def latent_embedding(self, xs):
         """
-        compute the zsore latent embedding of a cell (or a batch of cells)
+        compute the latent embedding of a cell (or a batch of cells)
 
         :param xs: a batch of vectors of gene counts from a cell
-        :return: a batch of the latent embeddings 
+        :return: a batch of the latent embeddings
         """
         zs,_ = self.encoder_z(xs)
-
-        # find the mean of each column/feature
-        mu     = torch.mean(zs, axis=0)                 # mu will have shape (n,)
-        # find the standard deviation of each column/feature
-        sigma  = torch.std(zs, axis=0)                  # sigma will have shape (n,)
-        # element-wise, subtract mu for that column from each example, divide by std for that column
+        mu     = torch.mean(zs, axis=0)  
+        sigma  = torch.std(zs, axis=0)             
         zs_norm = (zs - mu) / sigma 
         return zs_norm    
+    
+    def rawlatent_embedding(self, xs):
+        """
+        compute the latent embedding of a cell (or a batch of cells)
+
+        :param xs: a batch of vectors of gene counts from a cell
+        :return: a batch of the latent embeddings
+        """
+        zs,_ = self.encoder_z(xs)
+        return zs
     
     def model_classify(self, xs, ys  = None,acc_p = None,barcode = None):
         """
@@ -327,3 +309,4 @@ class tre(nn.Module):
         dummy guide function to accompany model_classify in inference
         """
         pass
+   
