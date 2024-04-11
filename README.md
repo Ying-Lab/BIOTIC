@@ -11,23 +11,23 @@ Installation
 -----
 1.Install pytorch according to your computational platform
 
-2.Install Trevi
+2.Install BIOTIC
 ```bash
 
-git clone https://github.com/Ying-Lab/Trevi
+git clone https://github.com/Ying-Lab/BIOTIC
 
-cd Trevi
+cd BIOTIC
 
 pip install -r requirements.txt 
 ```
 
 Running
 -----
-refer to demo in [a549 demo.ipynb](https://github.com/Ying-Lab/TREVI/blob/46201a7823887830b45a64c794123e7403863146/a549%20demo.ipynb)
+refer to demo in [a549 demo.ipynb](https://github.com/Ying-Lab/BIOTIC/blob/46201a7823887830b45a64c794123e7403863146/a549%20demo.ipynb)
 
 Parameters
 -----
-input: the count matrixs(numpy) of gene counts, gene accessibility score, cell label, TF-target gene reference
+input: the count matrices(numpy) of gene counts, gene accessibility score, cell label, TF-target gene reference
 
 output: trained model 
 
@@ -54,7 +54,7 @@ batch_size : number of images (and labels) to be considered in a batch ,default 
 
 External links
 -----
-BIOTIC along with detailed documentation is freely accessible at [https://trevi.readthedocs.io/en/master/](https://trevi.readthedocs.io/en/master/) under the MIT License.
+
 
 
 
