@@ -1,8 +1,6 @@
 
 import os
-#dataset
-os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+#model
 import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
@@ -106,7 +104,7 @@ class tre(nn.Module):
         self.sigmoid = nn.Sigmoid()
         # using GPUs for faster training of the networks
         if self.use_cuda:
-            self.cuda()
+            self.to(device)
         
     def model(self, xs,ys = None, acc_p = None,barcode = None):
         """
@@ -137,21 +135,21 @@ class tre(nn.Module):
             #sample ztf cell*tf
             prior_loc = torch.zeros(batch_size,self.z_dim, **options)
             prior_scale = torch.ones(batch_size,self.z_dim, **options)
-            zs = pyro.sample('z', dist.Normal(prior_loc, prior_scale).to_event(1))
+            zs = pyro.sample('z', dist.Normal(prior_loc, prior_scale).to_event(1)).to(device)
 
             #sample zgrn cell*tf*gene
             tf_loc = torch.ones(batch_size, self.mask_size, **options).cpu()*0.1+(self.mask*0.1).ravel()
             tf_loc = tf_loc.to(device).float()
             tf_scale = torch.ones(batch_size, self.mask_size, **options)
-            tf = pyro.sample('tf', dist.Normal(tf_loc, tf_scale).to_event(1))
+            tf = pyro.sample('tf', dist.Normal(tf_loc, tf_scale).to_event(1)).to(device)
             #sample library_size cell*1
             ls_loc = torch.ones(batch_size, **options)
             ls_scale = torch.ones(batch_size, **options)
-            ls = pyro.sample('ls', dist.Weibull(ls_loc, ls_scale))
+            ls = pyro.sample('ls', dist.Weibull(ls_loc, ls_scale)).to(device)
             ls = ls.unsqueeze(-1)####
             
             # true expression
-            thetas = self.decoder_thetas([zs,y, tf,acc_p])#
+            thetas = self.decoder_thetas([zs,y, tf,acc_p]).to(device)
             thetas = thetas * ls
             thetas = self.cutoff(thetas)
 
@@ -234,15 +232,15 @@ class tre(nn.Module):
         alpha = self.encoder_y(z)
         res, ind = torch.topk(alpha, 1)
         ys = torch.zeros_like(alpha).scatter_(1, ind, 1.0)
-
         return ys, alpha
+        
     def predicted_zgrn(self, xs):
         ptf,_ = self.encoder_ptf(xs)
         return ptf
     
     def latent_embedding(self, xs):
         """
-        compute the latent embedding of a cell (or a batch of cells)
+        compute the z_scored latent embedding of a cell (or a batch of cells)
 
         :param xs: a batch of vectors of gene counts from a cell
         :return: a batch of the latent embeddings
@@ -286,6 +284,7 @@ class tre(nn.Module):
         dummy guide function to accompany model_classify in inference
         """
         pass
+    
     def model_classify1(self, xs, ys  = None,acc_p = None,barcode = None):
         """
         this model is used to add auxiliary (supervised) loss as described in the
