@@ -56,7 +56,7 @@ class SingleCellCached(Dataset):
         #self.labels = self.labels.type(torch.FloatTensor)
         self.data  = self.data.type(torch.FloatTensor)
         self.data  = self.data.cuda()
-        self.data = torch.where(torch.isnan(self.data), torch.full_like(self.data, 0),self.data)
+        # self.data = torch.where(torch.isnan(self.data), torch.full_like(self.data, 0),self.data)
         self.data = torch.log(self.data + 1.)
         self.data  = self.data.float()
         self.labels = torch.LongTensor(label_file)
@@ -66,7 +66,7 @@ class SingleCellCached(Dataset):
         self.acc_p  = self.acc_p.type(torch.FloatTensor)
         self.acc_p  = self.acc_p.cuda()
         self.acc_p  = self.acc_p.float()
-        self.acc_p = torch.where(torch.isnan(self.acc_p), torch.full_like(self.acc_p, 0),self.acc_p)
+        # self.acc_p = torch.where(torch.isnan(self.acc_p), torch.full_like(self.acc_p, 0),self.acc_p)
         self.barcode = barcode
         self.barcode = torch.tensor(self.barcode)
         self.barcode = self.barcode.cuda()
