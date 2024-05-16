@@ -1,7 +1,7 @@
 import os
 #dataset
-os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_LAUNCH_BLOCKING'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import numpy as np
 import scipy
 import time as tm
@@ -117,21 +117,9 @@ def train_test_valid_loader_setup(datafile,label_file,acc_p,barcode,classnum,cud
 ):
     data_loaders = {'sup':None, 'unsup':None, 'valid':None ,'test':None}
     
-    #test
-    sup_data_filepree ,test_data_file= train_test_split(datafile, test_size=testsize, random_state=42)
-    sup_label_filepree, test_label_file = train_test_split(label_file, test_size=testsize, random_state=42)
-    sup_acc_ppree ,test_acc_p = train_test_split(acc_p, test_size=testsize, random_state=42)
-    sup_barcodepree ,test_barcode = train_test_split(barcode, test_size=testsize, random_state=42)
-
-    sup_data_filepre, unsup_data_file = train_test_split(sup_data_filepree, test_size=unsuptrain_size, random_state=42)
-    sup_label_filepre, unsup_label_file = train_test_split(sup_label_filepree, test_size=unsuptrain_size, random_state=42)
-    sup_acc_ppre, unsup_acc_p = train_test_split(sup_acc_ppree, test_size=unsuptrain_size, random_state=42)
-    sup_barcodepre, unsup_barcode = train_test_split(sup_barcodepree, test_size=unsuptrain_size, random_state=42)
-
-    sup_data_file, valid_data_file = train_test_split(sup_data_filepre, test_size=valid_size, random_state=42)
-    sup_label_file, valid_label_file = train_test_split(sup_label_filepre, test_size=valid_size, random_state=42)
-    sup_acc_p, valid_acc_p = train_test_split(sup_acc_ppre, test_size=valid_size, random_state=42)    
-    sup_barcode, valid_barcode = train_test_split(sup_barcodepre, test_size=valid_size, random_state=42)
+    sup_data_filepree,test_data_file, sup_label_filepree, test_label_file,sup_acc_ppree ,test_acc_p,sup_barcodepree ,test_barcode = train_test_split(datafile,label_file,acc_p,barcode,test_size=testsize, random_state=42)
+    sup_data_filepre, unsup_data_file, sup_label_filepre,unsup_label_file, sup_acc_ppre, unsup_acc_p ,sup_barcodepre, unsup_barcode = train_test_split(sup_data_filepree,sup_label_filepree,sup_acc_ppree,sup_barcodepree,test_size=unsuptrain_size, random_state=42)
+    sup_data_file, valid_data_file, sup_label_file, valid_label_file, sup_acc_p, valid_acc_p,sup_barcode, valid_barcode = train_test_split(sup_data_filepre,sup_label_filepre,sup_acc_ppre,sup_barcodepre,test_size=valid_size, random_state=42)
 
     data_loaders['sup'] = setup_data_loader(SingleCellCached, sup_data_file,sup_label_file,sup_acc_p,sup_barcode,classnum, cuda, float64, batch_size
     )
