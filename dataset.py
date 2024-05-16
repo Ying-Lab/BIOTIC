@@ -1,7 +1,7 @@
 import os
 #dataset
-os.environ['CUDA_LAUNCH_BLOCKING'] = '0'
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 import numpy as np
 import scipy
 import time as tm
