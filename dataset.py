@@ -1,38 +1,31 @@
 import os
 #dataset
-os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 import numpy as np
 import scipy
 import time as tm
 import scanpy as sc
-import anndata
 import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
 
-import inspect
-import pickle
-import collections
 import torch
 from typing import Union
-from torch.utils.data import Dataset, DataLoader,random_split
+from torch.utils.data import Dataset, DataLoader
 torch.set_default_tensor_type(torch.FloatTensor)
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-from sklearn import metrics
+
 from sklearn.metrics.cluster import normalized_mutual_info_score
 from sklearn.metrics import adjusted_rand_score
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score,matthews_corrcoef
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 def fn_y_scdata(y, num_classes, use_cuda, use_float64 = False):
     yp = torch.zeros(y.shape[0], num_classes)
 
     # send the data to GPU(s)
     if use_cuda:
-        yp = yp.cuda()
-        y = y.cuda()
+        yp = yp.to(device)
+        y = y.to(device)
 
     # transform the label y (integer between 0 and 9) to a one-hot
     yp = yp.scatter_(1, y.view(-1, 1), 1.0)
@@ -49,27 +42,28 @@ class SingleCellCached(Dataset):
     
     def __init__(self, data_file, label_file,acc_p,barcode,classnum,use_cuda = False, use_float64 = False):
         super(SingleCellCached).__init__()
-
+        ##rna
         self.data = data_file
         self.data = torch.from_numpy(self.data)
-        #########
-        #self.labels = self.labels.type(torch.FloatTensor)
         self.data  = self.data.type(torch.FloatTensor)
-        self.data  = self.data.cuda()
+        # self.data  = self.data.to(device)
         # self.data = torch.where(torch.isnan(self.data), torch.full_like(self.data, 0),self.data)
         self.data = torch.log(self.data + 1.)
         self.data  = self.data.float()
+        ##label
         self.labels = torch.LongTensor(label_file)
         self.classnum = classnum
-        self.labels = fn_y_scdata(self.labels,classnum,use_cuda=True)
+        self.labels = fn_y_scdata(self.labels,classnum,use_cuda)
+        ##atac
         self.acc_p = torch.from_numpy(acc_p)
         self.acc_p  = self.acc_p.type(torch.FloatTensor)
-        self.acc_p  = self.acc_p.cuda()
+        # self.acc_p  = self.acc_p.to(device)
         self.acc_p  = self.acc_p.float()
         # self.acc_p = torch.where(torch.isnan(self.acc_p), torch.full_like(self.acc_p, 0),self.acc_p)
+        ## cell id
         self.barcode = barcode
         self.barcode = torch.tensor(self.barcode)
-        self.barcode = self.barcode.cuda()
+        # self.barcode = self.barcode.to(device)
         self.use_cuda = use_cuda
         self.use_float64 = use_float64 
     def __len__(self):
